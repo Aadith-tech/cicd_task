@@ -1,0 +1,48 @@
+# Node.js / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# dotenv environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+# Ignore Docker build artifacts (optional)
+*.tar
+*.tgz
+
+# Docker machine
+docker-machine/
+
+# VS Code
+.vscode/
+.history/
+
+# Builds
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# GitHub Actions workflow logs
+.github/workflows/*.log
+
+# SSH keys (make sure you keep keys as secrets, not in git)
+id_rsa
+id_rsa.pub
+*.pem

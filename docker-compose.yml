@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: aadith27/mynginxapp:${IMAGE_TAG}
+    ports:
+      - "80:80"
+    deploy:
+      replicas: 2
