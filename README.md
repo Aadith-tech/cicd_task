@@ -1,4 +1,4 @@
-# MyNginxApp 🚀
+# MyNginxApp
 
 A simple Docker-based Nginx application with CI/CD deployment.
 
