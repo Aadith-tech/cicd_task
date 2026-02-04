@@ -41,19 +41,13 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/${{ secrets.EC2_USER }}
-
-            # if repo exists → update it, otherwise clone it
-            if [ -d "cicd_task" ]; then
-              cd cicd_task
-              git fetch --all
-              git reset --hard origin/main
-            else
-              git clone https://github.com/Aadith-tech/cicd_task.git
-              cd cicd_task
-            fi
-
-            # update IMAGE_TAG variable in docker-compose.yml
+            sudo docker swarm init
+            
+            git clone https://github.com/Aadith-tech/cicd_task.git
+            cd cicd_task
+            
+            # Update the image tag in compose
             sed -i "s|\(image: aadith27/mynginxapp:\).*|\1${{ github.sha }}|" docker-compose.yml
-
-            # deploy using Swarm
-            docker stack deploy -c docker-compose.yml my_stack
+            
+            # Deploy via Swarm
+            sudo docker stack deploy -c docker-compose.yml my_stack
