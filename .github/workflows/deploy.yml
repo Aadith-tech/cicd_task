@@ -1,27 +1,31 @@
+#Task Given
+#Builds a new Docker image on every push
+#Pushes it to Docker Hub with a unique tag
+#Updates docker-compose.yml on the EC2 instance with the new image tag
+#All need to be done using GitHub Actions
+
+
 name: CI/CD — Swarm Deploy
 
 on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout code
+
       - name: Checkout
         uses: actions/checkout@v5
 
-      # 2) Login to Docker Hub
       - name: Docker Hub Login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3) Build & Push Docker Image
       - name: Build & Push
         uses: docker/build-push-action@v6
         with:
@@ -32,7 +36,6 @@ jobs:
             aadith27/mynginxapp:${{ github.sha }}
             aadith27/mynginxapp:latest
 
-      # 4) SSH to EC2 and Deploy
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -50,4 +53,4 @@ jobs:
             sed -i "s|\(image: aadith27/mynginxapp:\).*|\1${{ github.sha }}|" docker-compose.yml
             
             # Deploy via Swarm
-            sudo docker stack deploy -c docker-compose.yml my_stack
+            sudo docker stack deploy -c docker-compose.yml aadith_swarm
