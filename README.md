@@ -1,24 +1,43 @@
-# MyNginxApp 🚀
+# MyNginxApp 
 
-A simple Docker-based Nginx application with CI/CD deployment.
+A containerized Nginx application with automated CI/CD pipeline, security scanning, and Docker Swarm deployment to AWS EC2.
 
 ## Overview
 
-This project demonstrates a containerized Nginx web application using Docker and Docker Compose. The app is designed to run with multiple replicas in a Docker Swarm environment.
+This project demonstrates a complete DevOps workflow with:
+- Automated Docker image building and pushing to Docker Hub
+- Trivy security vulnerability scanning
+- GitHub Actions CI/CD pipeline
+- Docker Swarm deployment to EC2
 
 ## Tech Stack
 
+- **Nginx (Alpine)** - Lightweight web server
 - **Docker** - Containerization
-- **Nginx (Alpine)** - Web server
-- **Docker Compose** - Orchestration
-- **Docker Swarm** - Container deployment
+- **Docker Compose** - Service orchestration
+- **Docker Swarm** - Production deployment
+- **GitHub Actions** - CI/CD automation
+- **Trivy** - Container security scanning
+- **AWS EC2** - Cloud hosting
+
+## Project Structure
+
+```
+├── Dockerfile              # Nginx Alpine container config
+├── docker-compose.yml      # Multi-replica Swarm setup
+├── html/
+│   └── index.html         # Web app content
+├── .github/
+│   └── workflows/
+│       └── deploy.yml     # CI/CD pipeline
+└── screenshots/           # Deployment proof
+    ├── docker_swarm_running.png
+    ├── nginx_app.png
+    ├── trivy_run_log.png
+    └── code_scan_artifact.png
+```
 
 ## Quick Start
-
-### Prerequisites
-
-- Docker & Docker Compose installed
-- Docker Swarm initialized (for production deployment)
 
 ### Run Locally
 
@@ -34,50 +53,105 @@ Visit `http://localhost` in your browser.
 docker-compose down
 ```
 
-### Deploy to Docker Swarm
+##  CI/CD Pipeline
+
+The GitHub Actions workflow runs on every push to `main`:
+
+1. **Checkout** - Pull latest code
+2. **Docker Hub Login** - Authenticate to registry
+3. **Build & Push** - Build image and push with git SHA tag
+4. **Trivy Scan** - Security vulnerability scanning
+5. **Upload Results** - Report findings to GitHub Security
+6. **EC2 Deployment** - Deploy via Docker Swarm using SSH
+
+### Key Features
+- ✅ Automatic image tagging with commit SHA
+- ✅ Multi-platform builds (linux/amd64)
+- ✅ Security scanning before deployment
+- ✅ Vulnerability reports in GitHub Security tab
+- ✅ Auto Docker installation on EC2 if needed
+- ✅ Swarm auto-initialization
+
+## Docker Swarm Deployment
+
+### Manual Deployment to Swarm
 
 ```bash
-# Initialize Docker Swarm (if not already initialized)
+# Initialize swarm (one-time)
 docker swarm init
 
 # Deploy the stack
 docker stack deploy -c docker-compose.yml aadith_swarm
-```
 
-### Remove Swarm Stack
+# View services
+docker stack services aadith_swarm
 
-```bash
+# Check running containers
+docker stack ps aadith_swarm
+
+# Remove stack
 docker stack rm aadith_swarm
 ```
 
-## Project Structure
+### Stack Configuration
+- **Replicas**: 2 (load balancing)
+- **Port**: 80 (HTTP)
+- **Image**: `aadith27/mynginxapp:latest`
 
-```
-├── Dockerfile          # Nginx container configuration
-├── docker-compose.yml  # Multi-replica setup
-├── html/              # Static HTML files
-│   └── index.html
-└── screenshots/       # Proof of deployment
-```
+## Security Scanning
 
-## Features
+Every push triggers Trivy scanning to detect CVEs (Common Vulnerabilities and Exposures).
 
-- ✅ Containerized Nginx server
-- ✅ Multi-replica deployment (2 replicas)
-- ✅ Docker Swarm ready
-- ✅ Alpine Linux for lightweight images
+### View Trivy Results
 
-## Screenshots
+**In GitHub:**
+1. Go to **Security** tab
+2. Click **Code scanning alerts**
+3. View vulnerability details with severity levels
 
-### Docker Swarm Running
-![Docker Swarm Running](screenshots/docker_swarm_running.png)
+**In Workflow Run:**
+1. Go to **Actions** tab
+2. Click the workflow run
+3. Check **Artifacts** for `trivy-scan-results`
+4. Expand **"Upload Trivy Results to GitHub Security"** step
 
-### Nginx App
+##  Screenshots
+
+### Nginx App Running
 ![Nginx App](screenshots/nginx_app.png)
 
-## Build & Push
+### Docker Swarm Status
+![Docker Swarm Running](screenshots/docker_swarm_running.png)
 
-```bash
-docker build -t aadith27/mynginxapp:latest .
-docker push aadith27/mynginxapp:latest
+### Trivy Scan Log
+![Trivy Run Log](screenshots/trivy_run_log.png)
+
+### GitHub Code Scanning
+![Code Scan Artifact](screenshots/code_scan_artifact.png)
+
+##  Required GitHub Secrets
+
+Configure these in **Settings > Secrets and variables > Actions**:
+
 ```
+DOCKERHUB_USERNAME    - Docker Hub username
+DOCKERHUB_TOKEN       - Docker Hub access token
+EC2_HOST              - EC2 instance IP address
+EC2_USER              - EC2 SSH username (e.g., ec2-user)
+EC2_SSH_KEY           - EC2 SSH private key
+```
+
+## Workflow Details
+
+### Image Tagging
+- Latest push tag: `aadith27/mynginxapp:latest`
+- Commit-specific: `aadith27/mynginxapp:<git-sha>`
+
+### Swarm Deployment
+- Automatically updates image tag in docker-compose.yml
+- Deploys with stack name: `aadith_swarm`
+- Creates 2 replicas for load balancing
+
+
+
+
