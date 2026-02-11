@@ -40,8 +40,16 @@ jobs:
 
       - name: Upload Trivy Results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
+        if: always()
         with:
           sarif_file: trivy-results.sarif
+
+      - name: Upload Trivy SARIF as Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-scan-results
+          path: trivy-results.sarif
 
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.0.3
