@@ -50,14 +50,30 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/${{ secrets.EC2_USER }}
-            sudo docker swarm init
+            # Add user to docker group and source bashrc
+            sudo usermod -aG docker ${{ secrets.EC2_USER }}
             
-            git clone https://github.com/Aadith-tech/cicd_task.git
-            cd cicd_task
+            # Use full path or check Docker installation
+            DOCKER_CMD=$(which docker || echo "/usr/bin/docker")
+            if [ ! -x "$DOCKER_CMD" ]; then
+              echo "Docker not found. Installing Docker..."
+              sudo apt-get update && sudo apt-get install -y docker.io
+              DOCKER_CMD="/usr/bin/docker"
+            fi
+            
+            # Initialize swarm
+            sudo $DOCKER_CMD swarm init || true
+            
+            # Clone or update repo
+            if [ -d "cicd_task" ]; then
+              cd cicd_task && git pull
+            else
+              git clone https://github.com/Aadith-tech/cicd_task.git
+              cd cicd_task
+            fi
             
             # Update the image tag in compose
             sed -i "s|\(image: aadith27/mynginxapp:\).*|\1${{ github.sha }}|" docker-compose.yml
             
             # Deploy via Swarm
-            sudo docker stack deploy -c docker-compose.yml aadith_swarm
+            sudo $DOCKER_CMD stack deploy -c docker-compose.yml aadith_swarm
