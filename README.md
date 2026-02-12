@@ -23,18 +23,14 @@ This project demonstrates a complete DevOps workflow with:
 ## Project Structure
 
 ```
-├── Dockerfile              # Nginx Alpine container config
-├── docker-compose.yml      # Multi-replica Swarm setup
+├── Dockerfile              # Nginx Alpine with test vulnerabilities
+├── docker-compose.yml      # Multi-replica Docker Swarm config
 ├── html/
-│   └── index.html         # Web app content
+│   └── index.html         # Web application content
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml     # CI/CD pipeline
-└── screenshots/           # Deployment proof
-    ├── docker_swarm_running.png
-    ├── nginx_app.png
-    ├── trivy_run_log.png
-    └── code_scan_artifact.png
+│       └── deploy.yml     # CI/CD with security checks
+└── screenshots/           # Evidence & proof
 ```
 
 ## Quick Start
@@ -55,22 +51,21 @@ docker-compose down
 
 ##  CI/CD Pipeline
 
-The GitHub Actions workflow runs on every push to `main`:
+The GitHub Actions workflow (`.github/workflows/deploy.yml`) runs on every push to `main`:
 
 1. **Checkout** - Pull latest code
 2. **Docker Hub Login** - Authenticate to registry
-3. **Build & Push** - Build image and push with git SHA tag
-4. **Trivy Scan** - Security vulnerability scanning
-5. **Upload Results** - Report findings to GitHub Security
-6. **EC2 Deployment** - Deploy via Docker Swarm using SSH
+3. **Build & Push** - Build image, push with git SHA tag
+4. **Trivy Scan (SARIF)** - Generate security report in SARIF format
+5. **Trivy Check (Fail Gate)** - ⛔ **Fails pipeline if HIGH/CRITICAL CVEs found**
+6. **Upload Results** - Report to GitHub Security tab
+7. **Upload Artifact** - Store SARIF file in artifacts
+8. **EC2 Deployment** - Deploy via Docker Swarm (only if all checks pass)
 
-### Key Features
-- ✅ Automatic image tagging with commit SHA
-- ✅ Multi-platform builds (linux/amd64)
-- ✅ Security scanning before deployment
-- ✅ Vulnerability reports in GitHub Security tab
-- ✅ Auto Docker installation on EC2 if needed
-- ✅ Swarm auto-initialization
+### Security Gate
+- Pipeline **FAILS** if Trivy detects HIGH or CRITICAL vulnerabilities
+- Deployment is **BLOCKED** until vulnerabilities are fixed
+- Reports are still generated for analysis
 
 ## Docker Swarm Deployment
 
@@ -100,34 +95,46 @@ docker stack rm aadith_swarm
 
 ## Security Scanning
 
-Every push triggers Trivy scanning to detect CVEs (Common Vulnerabilities and Exposures).
+Trivy automatically scans every Docker image for CVEs (Common Vulnerabilities and Exposures).
+
+### Vulnerability Detection
+- **Scope**: OS packages and libraries
+- **Severity Levels**: LOW, MEDIUM, HIGH, CRITICAL
+- **Action on HIGH/CRITICAL**: Pipeline fails, deployment blocked
+- **Unfixed vulns**: Ignored (with patches available only)
 
 ### View Trivy Results
 
-**In GitHub:**
-1. Go to **Security** tab
-2. Click **Code scanning alerts**
-3. View vulnerability details with severity levels
+**GitHub Actions Artifacts:**
+- Go to **Actions** → workflow run → **Artifacts**
+- Download `trivy-scan-results` (SARIF file)
 
-**In Workflow Run:**
-1. Go to **Actions** tab
-2. Click the workflow run
-3. Check **Artifacts** for `trivy-scan-results`
-4. Expand **"Upload Trivy Results to GitHub Security"** step
+**GitHub Security Tab:**
+- Go to **Security** → **Code scanning alerts**
+- View vulnerability details by severity
 
-##  Screenshots
+**Pipeline Failure Example:**
+- If Dockerfile contains vulnerable packages (e.g., outdated curl, openssl)
+- Trivy detects them with CVE details
+- Workflow shows ❌ at "Trivy Vulnerability Check" step
+- Deployment is skipped
 
-### Nginx App Running
-![Nginx App](screenshots/nginx_app.png)
+##  Screenshots & Proof
 
-### Docker Swarm Status
-![Docker Swarm Running](screenshots/docker_swarm_running.png)
+### Application Running
+![Nginx App Running](screenshots/nginx_app.png)
 
-### Trivy Scan Log
-![Trivy Run Log](screenshots/trivy_run_log.png)
+### Docker Swarm Deployment
+![Docker Swarm Status](screenshots/docker_swarm_running.png)
 
-### GitHub Code Scanning
-![Code Scan Artifact](screenshots/code_scan_artifact.png)
+### Vulnerabilities Detected
+![Trivy Vulnerabilities Found](screenshots/Vuln_found.png)
+
+### Pipeline Failure (Security Gate)
+![Pipeline Failed on Vulnerability Check](screenshots/pipeline_fail.png)
+
+### GitHub Security Scanning Results
+![GitHub Code Scanning Artifact](screenshots/code_scan_artifact.png)
 
 ##  Required GitHub Secrets
 
@@ -143,14 +150,25 @@ EC2_SSH_KEY           - EC2 SSH private key
 
 ## Workflow Details
 
-### Image Tagging
-- Latest push tag: `aadith27/mynginxapp:latest`
-- Commit-specific: `aadith27/mynginxapp:<git-sha>`
+### Image Tagging Strategy
+- **Latest tag**: `aadith27/mynginxapp:latest` - Points to most recent
+- **Commit SHA tag**: `aadith27/mynginxapp:<git-sha>` - Immutable version
 
-### Swarm Deployment
-- Automatically updates image tag in docker-compose.yml
-- Deploys with stack name: `aadith_swarm`
-- Creates 2 replicas for load balancing
+### Docker Swarm Deployment Process
+1. Auto-initializes Docker Swarm (if not already)
+2. Clones/updates repo on EC2
+3. Dynamically updates image tag in `docker-compose.yml` to match current commit
+4. Deploys stack with name `aadith_swarm`
+5. Runs 2 replicas for load balancing on port 80
+
+### Security Testing
+The Dockerfile includes vulnerable package versions for testing:
+- `openssl=1.1.1q-r0` - Multiple CVEs
+- `curl=7.85.0-r0` - HTTP vulnerabilities
+- `wget=1.21.2-r0` - Directory traversal CVEs
+- `openssh=8.9p1-r0` - Authentication issues
+
+These are intentional for CI/CD demonstration purposes.
 
 
 
