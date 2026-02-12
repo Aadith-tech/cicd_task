@@ -38,6 +38,16 @@ jobs:
           format: sarif
           output: trivy-results.sarif
 
+      - name: Trivy Vulnerability Check (Fail on High/Critical)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: aadith27/mynginxapp:${{ github.sha }}
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+
       - name: Upload Trivy Results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
         if: always()
@@ -52,6 +62,7 @@ jobs:
           path: trivy-results.sarif
 
       - name: SSH Deploy
+        if: success()
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
